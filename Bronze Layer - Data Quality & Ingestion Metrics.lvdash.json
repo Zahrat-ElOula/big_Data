@@ -1,0 +1,480 @@
+{
+  "datasets": [
+    {
+      "name": "bronze_ingestion_timestamp",
+      "displayName": "Bronze Latest Ingestion",
+      "queryLines": [
+        "SELECT\n",
+        "  MAX(\n",
+        "    GREATEST(\n",
+        "      (\n",
+        "        SELECT\n",
+        "          MAX(_ingestion_ts)\n",
+        "        FROM\n",
+        "          bigdata_catalog.bronze.crm_customers\n",
+        "      ),\n",
+        "      (\n",
+        "        SELECT\n",
+        "          MAX(_ingestion_ts)\n",
+        "        FROM\n",
+        "          bigdata_catalog.bronze.crm_products\n",
+        "      ),\n",
+        "      (\n",
+        "        SELECT\n",
+        "          MAX(_ingestion_ts)\n",
+        "        FROM\n",
+        "          bigdata_catalog.bronze.crm_sales\n",
+        "      ),\n",
+        "      (\n",
+        "        SELECT\n",
+        "          MAX(_ingestion_ts)\n",
+        "        FROM\n",
+        "          bigdata_catalog.bronze.erp_customer_demographics\n",
+        "      ),\n",
+        "      (\n",
+        "        SELECT\n",
+        "          MAX(_ingestion_ts)\n",
+        "        FROM\n",
+        "          bigdata_catalog.bronze.erp_customer_location\n",
+        "      ),\n",
+        "      (\n",
+        "        SELECT\n",
+        "          MAX(_ingestion_ts)\n",
+        "        FROM\n",
+        "          bigdata_catalog.bronze.erp_product_category\n",
+        "      )\n",
+        "    )\n",
+        "  ) as latest_ingestion"
+      ]
+    },
+    {
+      "name": "bronze_sales_by_product",
+      "displayName": "Bronze Sales by Product Line",
+      "queryLines": [
+        "SELECT\n",
+        "  CASE\n",
+        "    WHEN p.prd_line IS NOT NULL THEN p.prd_line\n",
+        "    WHEN s.sls_prd_key LIKE 'BK-M%' THEN 'Mountain Bikes'\n",
+        "    WHEN s.sls_prd_key LIKE 'BK-R%' THEN 'Road Bikes'\n",
+        "    WHEN s.sls_prd_key LIKE 'BK-T%' THEN 'Touring Bikes'\n",
+        "    ELSE 'Unknown'\n",
+        "  END as product_line,\n",
+        "  COUNT(*) as sales_count,\n",
+        "  ROUND(SUM(s.sls_price), 2) as total_revenue\n",
+        "FROM\n",
+        "  bigdata_catalog.bronze.crm_sales s\n",
+        "    LEFT JOIN bigdata_catalog.bronze.crm_products p\n",
+        "      ON s.sls_prd_key = p.prd_key\n",
+        "WHERE\n",
+        "  s.sls_order_dt != 0\n",
+        "GROUP BY\n",
+        "  product_line\n",
+        "ORDER BY\n",
+        "  total_revenue DESC"
+      ]
+    },
+    {
+      "name": "bronze_customers_by_country",
+      "displayName": "Bronze Customers by Country",
+      "queryLines": [
+        "SELECT\n",
+        "  l.CNTRY as country,\n",
+        "  COUNT(DISTINCT c.cst_id) as customer_count\n",
+        "FROM\n",
+        "  bigdata_catalog.bronze.crm_customers c\n",
+        "    INNER JOIN bigdata_catalog.bronze.erp_customer_location l\n",
+        "      ON c.cst_id = l.CID\n",
+        "GROUP BY\n",
+        "  l.CNTRY\n",
+        "ORDER BY\n",
+        "  customer_count DESC"
+      ]
+    },
+    {
+      "name": "bronze_table_counts",
+      "displayName": "Bronze Table Counts",
+      "queryLines": [
+        "SELECT\n",
+        "  (\n",
+        "    SELECT\n",
+        "      COUNT(*)\n",
+        "    FROM\n",
+        "      bigdata_catalog.bronze.crm_customers\n",
+        "  ) as crm_customers_count,\n",
+        "  (\n",
+        "    SELECT\n",
+        "      COUNT(*)\n",
+        "    FROM\n",
+        "      bigdata_catalog.bronze.crm_products\n",
+        "  ) as crm_products_count,\n",
+        "  (\n",
+        "    SELECT\n",
+        "      COUNT(*)\n",
+        "    FROM\n",
+        "      bigdata_catalog.bronze.crm_sales\n",
+        "  ) as crm_sales_count,\n",
+        "  (\n",
+        "    SELECT\n",
+        "      COUNT(*)\n",
+        "    FROM\n",
+        "      bigdata_catalog.bronze.erp_customer_demographics\n",
+        "  ) as erp_demographics_count,\n",
+        "  (\n",
+        "    SELECT\n",
+        "      COUNT(*)\n",
+        "    FROM\n",
+        "      bigdata_catalog.bronze.erp_customer_location\n",
+        "  ) as erp_location_count,\n",
+        "  (\n",
+        "    SELECT\n",
+        "      COUNT(*)\n",
+        "    FROM\n",
+        "      bigdata_catalog.bronze.erp_product_category\n",
+        "  ) as erp_category_count"
+      ]
+    },
+    {
+      "name": "bronze_data_quality",
+      "displayName": "Bronze Data Quality Issues",
+      "queryLines": [
+        "SELECT\n",
+        "  'Invalid Dates' as issue_type,\n",
+        "  COUNT(*) as issue_count,\n",
+        "  'crm_sales table has order_dt=0' as description\n",
+        "FROM\n",
+        "  bigdata_catalog.bronze.crm_sales\n",
+        "WHERE\n",
+        "  sls_order_dt = 0\n",
+        "UNION ALL\n",
+        "SELECT\n",
+        "  'Orphaned Customers' as issue_type,\n",
+        "  COUNT(*) as issue_count,\n",
+        "  'CRM customers without ERP demographics' as description\n",
+        "FROM\n",
+        "  bigdata_catalog.bronze.crm_customers c\n",
+        "    LEFT JOIN bigdata_catalog.bronze.erp_customer_demographics d\n",
+        "      ON c.cst_id = d.CID\n",
+        "WHERE\n",
+        "  d.CID IS NULL\n",
+        "UNION ALL\n",
+        "SELECT\n",
+        "  'Missing Product Categories' as issue_type,\n",
+        "  COUNT(*) as issue_count,\n",
+        "  'Products without category assignment' as description\n",
+        "FROM\n",
+        "  bigdata_catalog.bronze.crm_products\n",
+        "WHERE\n",
+        "  prd_line IS NULL\n",
+        "  OR TRIM(prd_line) = ''"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "f84c4bc4",
+      "displayName": "Page 1",
+      "layout": [
+        {
+          "widget": {
+            "name": "crm_customers_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_table_counts",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "CRM Customers",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "crm_products_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_table_counts",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "CRM Products",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "crm_sales_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_table_counts",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "CRM Sales",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "erp_demographics_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_table_counts",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "ERP Demographics",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "erp_location_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_table_counts",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "ERP Location",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "erp_category_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_table_counts",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "ERP Product Categories",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "ingestion_timestamp",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_ingestion_timestamp",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Latest Ingestion Time",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "data_quality_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_data_quality",
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Data Quality Issues",
+                "showTitle": true
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": []
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 9,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "sales_by_product_bar",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_sales_by_product",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Sales by Product Line",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "customers_by_country_pie",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bronze_customers_by_country",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Customer Distribution by Country",
+                "showTitle": true
+              },
+              "widgetType": "pie",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

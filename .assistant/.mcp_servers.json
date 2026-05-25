@@ -1,0 +1,37 @@
+[
+  {
+    "name": "SharePoint",
+    "isToggledOn": null,
+    "isLoading": false,
+    "disabledTools": [],
+    "mcpType": "internal"
+  },
+  {
+    "name": "Google Drive",
+    "isToggledOn": null,
+    "isLoading": false,
+    "disabledTools": [],
+    "mcpType": "internal"
+  },
+  {
+    "name": "Glean",
+    "isToggledOn": null,
+    "isLoading": false,
+    "disabledTools": [],
+    "mcpType": "internal"
+  },
+  {
+    "name": "GitHub",
+    "isToggledOn": null,
+    "isLoading": false,
+    "disabledTools": [],
+    "mcpType": "internal"
+  },
+  {
+    "name": "Atlassian",
+    "isToggledOn": null,
+    "isLoading": false,
+    "disabledTools": [],
+    "mcpType": "internal"
+  }
+]

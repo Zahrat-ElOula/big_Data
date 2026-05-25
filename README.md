@@ -348,10 +348,3 @@ Actions in Databricks:
 * [Apache Spark Documentation](https://spark.apache.org/docs/latest/)
 * [Databricks Learning Academy](https://learn.databricks.com/)
 
-## License
-
-This project is licensed under the MIT License.
-
-## Contact
-
-For questions or support, please open an issue on GitHub or contact the project maintainer.

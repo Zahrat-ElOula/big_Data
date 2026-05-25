@@ -1,8 +1,9 @@
-![FastAPI](https://img.shields.io/badge/FASTAPI-0.104-gray?style=flat-square&logo=fastapi&logoColor=white&color=009485)
-![Python](https://img.shields.io/badge/PYTHON-3.11-gray?style=flat-square&logo=python&logoColor=white&color=0071C5)
-![React](https://img.shields.io/badge/REACT-18.X-gray?style=flat-square&logo=react&logoColor=white&color=61DAFB)
-![Docker](https://img.shields.io/badge/DOCKER-CONTAINERIZED-gray?style=flat-square&logo=docker&logoColor=white&color=0096D6)
-![ML](https://img.shields.io/badge/ML-XGBOOST%20|%20PROPHET-gray?style=flat-square&logo=ml&logoColor=white&color=FF6600)
+![Databricks](https://img.shields.io/badge/DATABRICKS-Latest-gray?style=flat-square&logo=databricks&logoColor=white&color=FF3621)
+![Apache Spark](https://img.shields.io/badge/APACHE%20SPARK-3.x-gray?style=flat-square&logo=apachespark&logoColor=white&color=E25A1C)
+![Python](https://img.shields.io/badge/PYTHON-3.8+-gray?style=flat-square&logo=python&logoColor=white&color=3776AB)
+![Delta Lake](https://img.shields.io/badge/DELTA%20LAKE-Latest-gray?style=flat-square&logo=delta&logoColor=white&color=00A3E0)
+![Unity Catalog](https://img.shields.io/badge/UNITY%20CATALOG-Data%20Governance-gray?style=flat-square&logo=databricks&logoColor=white&color=1F77B4)
+![SQL](https://img.shields.io/badge/SQL-Standard-gray?style=flat-square&logo=sql&logoColor=white&color=CC2927)
 
 # Big Data Project on Databricks
 
